@@ -99,8 +99,8 @@ Here we demonstrate how to use `Clipper` for DEG identification. set `analysis` 
 Users are recommended to normalize and log-tranform read count matrices before inputing them to `Clipper` (see examples below). The following example uses `edgeR` to preprocess raw read count matrices as an example. Users can also use their preferred normalization methods.
 ```{r, eval = F}
 library(edgeR)
-count1 = readRDS('simcount1.rds') 
-count2 = readRDS('simcount2.rds')
+count1 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/simcount1.rds')) 
+count2 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/simcount2.rds'))
 ############ use edgeR to normalize ############
 r1 = ncol(count1)
 r2 = ncol(count2)
@@ -122,17 +122,25 @@ re_clipper = Clipper(score.exp = log(base = 2, count_norm[,1:r1] + 1),
                      FDR = 0.5,
                      analysis = "differential")
 head(re_clipper$discoveries[[1]]) ###### identified DEG indices at FDR = 0.05
+# 34  72  90 118 125 132 
 ```
 
 
 ## DIR identification from Hi-C data
 To demonstrate the use of `Clipper` to identify differential chromosomal interaction regions, we start with interaction matrices obtained from Hi-C data. Because Hi-C interaction matrices are often stored as sparse matrices, we need to format these matrices into the right form. Suppose we have two interaction matrices under the experimental condition and the another two under the background condition. 
 ```{r, eval = F}
-exp1 = readRDS(file = 'interactionMatrix_exp1.rds')
-exp2 = readRDS(file = 'interactionMatrix_exp2.rds')
-back1 = readRDS(file = 'interactionMatrix_back1.rds')
-back2 = readRDS(file = 'interactionMatrix_back2.rds')
+exp1 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_exp1.rds'))
+exp2 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_exp2.rds'))
+back1 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_back1.rds'))
+back2 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_back2.rds'))
 head(exp1)
+#        V1    V2       
+# 1:1 0e+00 0e+00  63537
+# 1:2 0e+00 1e+06  48305
+# 2:2 1e+06 1e+06 366193
+# 1:3 0e+00 2e+06   4195
+# 2:3 1e+06 2e+06  58452
+# 3:3 2e+06 2e+06 344527
 ```
 `exp1` is a interaction matrix of resolution $10^6$ base pairs. Each row represents the interaction intensity between one pair of regions: the first integer indicates the starting point of a region, the second integer indicates the starting point of another region, and the third numeric indicates the read counts between these two regions. Only pairs of regions with a non-zero read count are explicitly coded in this matrix; all other pairs have zero read counts.
 
@@ -168,6 +176,13 @@ re <- Clipper(score.exp = log(cbind(exp1[,3], exp2[,3])),
         FDR = c(0.01, 0.05, 0.1),
         analysis = "differential")
 head(exp1[re$discoveries[[2]] ,1:2]) ## identified DIRs
+#             V1       V2
+# 47:112 4.6e+07 1.11e+08
+# 48:112 4.7e+07 1.11e+08
+# 49:112 4.8e+07 1.11e+08
+# 50:112 4.9e+07 1.11e+08
+# 51:112 5.0e+07 1.11e+08
+# 52:112 5.1e+07 1.11e+08
 ```
 
 
@@ -178,7 +193,7 @@ Here we demonstrate how to apply `Clipper` as an add-on to MACS, a popular peak 
 To implement `Clipper` for peak calling, users need to extract two outputs from MACS: a "$*$_peaks.narrowPeak" file and two "$*$_pileup.dbg" files, one for the experimental track and the other for the control track. The "$*$_peaks.narrowPeak" file contains candidate peaks identified by MACS with its second and third rows indicating the start and end points of the peaks. The "$*$_pileup.dbg" files contain the base-pair read coverages for genomic regions of interest. See the following code chunk for a glance of these files. See the end of this section for command line codes we used to generate the "$*$_peaks.narrowPeak" file and the two "$*$_pileup.dbg" files.
 
 ```{r, eval = F}
-experimental <-  read.table(paste0("syn/rep14/rep1/experimental_treat_pileup.bdg"))
+experimental <- read.table(url("http://www.stat.ucla.edu/~jingyi.li/data/Clipper/experimental_treat_pileup.bdg"))
 head(experimental)
 #     V1    V2    V3 V4
 # 1 chr1     0  9852  0
@@ -187,7 +202,7 @@ head(experimental)
 # 4 chr1 10150 10175  1
 # 5 chr1 10175 10211  2
 # 6 chr1 10211 10256  1
-control <- read.table(paste0("syn/rep14/rep1/control_treat_pileup.bdg"))
+control <- read.table(url("http://www.stat.ucla.edu/~jingyi.li/data/Clipper/control_treat_pileup.bdg"))
 head(control)
 #     V1   V2    V3 V4
 # 1 chr1    0  9811  0
@@ -196,15 +211,15 @@ head(control)
 # 4 chr1 9896  9947  3
 # 5 chr1 9947  9997  4
 # 6 chr1 9997 10106  5
-macs2.peak <- read.table("syn/rep14/rep1/twosample_peaks.narrowPeak")
+macs2.peak <- read.table(url("http://www.stat.ucla.edu/~jingyi.li/data/Clipper/twosample_peaks.narrowPeak"))
 head(macs2.peak)
-#     V1      V2      V3
-# 1 chr1  799321  799619
-# 2 chr1  904144  905827
-# 3 chr1  940097  943865
-# 4 chr1 1058976 1060651
-# 5 chr1 1247846 1249093
-# 6 chr1 1344798 1345405
+#     V1      V2      V3               V4  V5 V6       V7       V8       V9  V10
+# 1 chr1  904144  905821 twosample_peak_1 155  .  9.98306 18.60009 15.51687  425
+# 2 chr1  940135  943865 twosample_peak_2 475  . 21.38286 51.57176 47.52760 1770
+# 3 chr1 1058992 1060607 twosample_peak_3 218  . 12.25136 25.12054 21.81555  402
+# 4 chr1 1247855 1249009 twosample_peak_4 155  .  9.98306 18.60009 15.51687  278
+# 5 chr1 1344798 1345386 twosample_peak_5  63  .  6.46653  9.08008  6.38249  250
+# 6 chr1 1430427 1432027 twosample_peak_6 130  . 10.31231 16.01712 13.03906 1322
 ```
 
 ### Use Clipper to screen candidate peaks
@@ -219,7 +234,7 @@ re <- Clipper(score.exp = matrix(s1, ncol = 1),
               score.back = matrix(s2, ncol = 1), 
               analysis = "enrichment")
 # the threshold on contrast scores
-re$thre
+re$contrast.score.thre
 # 6
 ```
 We then use this threshold to screen the candidate peaks identified by MACS. We compare the median of per-base-pair contrast scores within each candidate peak with the threshold output by `Clipper`. Only peaks whose median per-base-pair contrast score is greater or equal to the threshold are identified as peaks. We don't directly use the discoveries output by `Clipper` becasuse they are base-pair features and do not form biologically meaningful peaks. Instead, we use better-defined peak regions by MACS.
@@ -234,7 +249,7 @@ median.peak <- sapply(1:nrow(macs2.peak), function(i){
   return(median(s1[start:end] -(s2[start:end])))
 })
 # peaks identified by Clipper
-clipper.peak <- macs2.peak[median.peak >= re$thre,]
+clipper.peak <- macs2.peak[median.peak >= re$contrast.score.thre,]
 ```
 
 
@@ -254,10 +269,16 @@ macs2 callpeak -t control.bam -f BAM -n back -B -q 1 --outdir results
 The enrichment functionality of `Clipper` also allows it to control the FDR of peptide identification as an add-on to database search engines. Here we demonstrate this function using an example of Mascot, a popular database search method for peptide identification. Similar workflows also apply if users prefer other database search methods such as SEQUEST, Byonic and etc. 
 First we load a peptide-spectrum match (PSM) level sample output from Mascot with the target-decoy search strategy:
 ```{r, eval = F}
+library(rio)
 library(openxlsx)
-dat = read.xlsx(xlsxFile ='~/Dropbox/database search in proteomics/data/Archaea database Search Results - updated/Archaea Mascot Targets 100_FDR.xlsx')
-dat_decoy = read.xlsx(xlsxFile ='~/Dropbox/database search in proteomics/data/Archaea database Search Results - updated/Archaea Mascot DECOYS 100_FDR.xlsx')
-str(dat)
+temp = tempfile(fileext = ".xlsx")
+dataURL <- 'http://www.stat.ucla.edu/~jingyi.li/data/Clipper/Archaea%20Mascot%20Targets%20100_FDR.xlsx'
+download.file(dataURL, destfile=temp, mode='wb')
+dat = read.xlsx(temp)
+dataURL <- 'http://www.stat.ucla.edu/~jingyi.li/data/Clipper/Archaea%20Mascot%20DECOYS%20100_FDR.xlsx'
+download.file(dataURL, destfile=temp, mode='wb')                 
+dat_decoy = read.xlsx(temp)
+# str(dat)
 ```
 To apply `Clipper` to control FDR of identified PSMs, we treat spectra as features; given a spetrum, we treat its q-value from the target search as a measurement under the experimental condition and its q-value from the decoy search as a measurement under the background condition. Prior to applying Clipper, we use the following code to format search results:
 ```{r, eval = F}
@@ -286,7 +307,7 @@ query_decoy = query_decoy[match(dat$query, query_decoy)]
 ### check percentage shared 
 mean(query_decoy %in% query)
 length(score_decoy)
-  
+# 0.8422165
 ```
 Our goal is to identify spectra whose q-value from the target search is smaller than that from the decoy search; thus we set `analysis` to be `"enrichment"`. Because a smaller q-value is considered better, we feed $-$log-transformed q-values into `Clipper`.
 ```{r, eval = F}
@@ -294,7 +315,10 @@ re = Clipper(score.exp = score,
                score.back = score_decoy,
                FDR = 0.01,
                analysis = 'enrichment')
-head(match[re$discoveries[[1]]]) ### identified matches
+head(match[re$discoveries[[1]]]) ### identified matches in the form of filename:spectrum scan number: peptide sequence
+# [1] "am190328_006.raw:1572:KYEESGKPR"    "am190328_006.raw:1720:RADSMISDEKER"
+# [3] "am190328_005.raw:1784:MMVEVAK"      "am190328_006.raw:1807:YPESNYMHK"   
+# [5] "am190328_005.raw:1830:MDMVNYNQK"    "am190328_006.raw:1852:MDMVNYNQK"   
 ```
 
 
