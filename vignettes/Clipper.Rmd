@@ -3,10 +3,10 @@ title: "Analyzing high-throughput data with Clipper"
 author: "Xinzhou Ge, Yiling Chen"
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     df_print: paged
-    toc: yes
-  pdf_document:
     toc: yes
 mainfont: Arial
 header-includes: \usepackage[T1]{fontenc}
@@ -30,8 +30,8 @@ knitr::opts_chunk$set(
 ## General pipeline
 Here we show the most basic applications of Clipper in differential and enrichment analysis. `Clipper requires a minimum of four inputs: 
 
-- `score.exp` the measurements from the background condition
-- `score.back` the measurements from the experimental condition
+- `score.exp` the measurements from the experimental (treatment) condition
+- `score.back` the measurements from the background (control) condition
 - `analysis` the type of analysis, "differential" or "enrichment"
 - `FDR` the target FDR threshold(s), set to 0.05 by default
 In a differential analysis, the two conditions can be treated equally thus you can assign either condition as background/experimental.
@@ -48,7 +48,8 @@ We first introduce an example of differential analysis, we can use the simulated
 #use three FDR thresholds: 0.01, 0.05, 0.1
 exp_d[c(1:3, 1001:1003), ]
 back_d[c(1:3, 1001:1003), ]
-re1 <- Clipper(score.exp = exp_d, score.back = back_d, analysis = "differential", FDR = c(0.01, 0.05, 1))
+re1 <- Clipper(score.exp = exp_d, score.back = back_d, analysis = "differential", 
+               FDR = c(0.01, 0.05, 0.1))
 names(re1)
 ```
 
@@ -57,7 +58,8 @@ For enrichment analysis, we can also use the simulated data `exp_e` and `back_e`
 #use three FDR thresholds: 0.01, 0.05, 0.1
 exp_e[c(1:3, 1001:1003), ]
 back_e[c(1:3, 1001:1003), ]
-re2 <- Clipper(score.exp = exp_e, score.back = back_e, analysis = "enrichment", FDR = c(0.01, 0.05, 1))
+re2 <- Clipper(score.exp = exp_e, score.back = back_e, analysis = "enrichment",
+               FDR = c(0.01, 0.05, 0.1))
 names(re2)
 ```
 `Clipper` returns a list and its component `discovery` is a list of indices of identified interesting discoveries corresponding to the FDR threshold(s):
@@ -101,8 +103,9 @@ Here we demonstrate how to use `Clipper` for DEG identification. set `analysis` 
 Users are recommended to normalize and log-tranform read count matrices before inputing them to `Clipper` (see examples below). The following example uses `edgeR` to preprocess raw read count matrices as an example. Users can also use their preferred normalization methods.
 ```{r, eval = F}
 library(edgeR)
-count1 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/simcount1.rds')) 
-count2 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/simcount2.rds'))
+dataurl = 'http://www.stat.ucla.edu/~jingyi.li/data/Clipper/'
+count1 = readRDS(url(paste0(dataurl, 'simcount1.rds'))) 
+count2 = readRDS(url(paste0(dataurl, 'simcount2.rds')))
 ############ use edgeR to normalize ############
 r1 = ncol(count1)
 r2 = ncol(count2)
@@ -131,10 +134,10 @@ head(re_clipper$discoveries[[1]]) ###### identified DEG indices at FDR = 0.05
 ## DIR identification from Hi-C data
 To demonstrate the use of `Clipper` to identify differential chromosomal interaction regions, we start with interaction matrices obtained from Hi-C data. Because Hi-C interaction matrices are often stored as sparse matrices, we need to format these matrices into the right form. Suppose we have two interaction matrices under the experimental condition and the another two under the background condition. 
 ```{r, eval = F}
-exp1 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_exp1.rds'))
-exp2 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_exp2.rds'))
-back1 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_back1.rds'))
-back2 = readRDS(url('http://www.stat.ucla.edu/~jingyi.li/data/Clipper/interactionMatrix_back2.rds'))
+exp1 = readRDS(url(paste0(dataurl, 'interactionMatrix_exp1.rds')))
+exp2 = readRDS(url(paste0(dataurl, 'interactionMatrix_exp2.rds')))
+back1 = readRDS(url(paste0(dataurl, 'interactionMatrix_back1.rds')))
+back2 = readRDS(url(paste0(dataurl, 'interactionMatrix_back2.rds')))
 head(exp1)
 #        V1    V2       
 # 1:1 0e+00 0e+00  63537
@@ -195,7 +198,7 @@ Here we demonstrate how to apply `Clipper` as an add-on to MACS, a popular peak 
 To implement `Clipper` for peak calling, users need to extract two outputs from MACS: a "$*$_peaks.narrowPeak" file and two "$*$_pileup.dbg" files, one for the experimental track and the other for the control track. The "$*$_peaks.narrowPeak" file contains candidate peaks identified by MACS with its second and third rows indicating the start and end points of the peaks. The "$*$_pileup.dbg" files contain the base-pair read coverages for genomic regions of interest. See the following code chunk for a glance of these files. See the end of this section for command line codes we used to generate the "$*$_peaks.narrowPeak" file and the two "$*$_pileup.dbg" files.
 
 ```{r, eval = F}
-experimental <- read.table(url("http://www.stat.ucla.edu/~jingyi.li/data/Clipper/experimental_treat_pileup.bdg"))
+experimental <- read.table(url(paste0(dataurl, 'experimental_treat_pileup.bdg')))
 head(experimental)
 #     V1    V2    V3 V4
 # 1 chr1     0  9852  0
@@ -204,7 +207,7 @@ head(experimental)
 # 4 chr1 10150 10175  1
 # 5 chr1 10175 10211  2
 # 6 chr1 10211 10256  1
-control <- read.table(url("http://www.stat.ucla.edu/~jingyi.li/data/Clipper/control_treat_pileup.bdg"))
+control <- read.table(url(paste0(dataurl, 'control_treat_pileup.bdg')))
 head(control)
 #     V1   V2    V3 V4
 # 1 chr1    0  9811  0
@@ -213,7 +216,7 @@ head(control)
 # 4 chr1 9896  9947  3
 # 5 chr1 9947  9997  4
 # 6 chr1 9997 10106  5
-macs2.peak <- read.table(url("http://www.stat.ucla.edu/~jingyi.li/data/Clipper/twosample_peaks.narrowPeak"))
+macs2.peak <- read.table(url(paste0(dataurl, 'twosample_peaks.narrowPeak')))
 head(macs2.peak)
 #     V1      V2      V3               V4  V5 V6       V7       V8       V9  V10
 # 1 chr1  904144  905821 twosample_peak_1 155  .  9.98306 18.60009 15.51687  425
@@ -271,13 +274,12 @@ macs2 callpeak -t control.bam -f BAM -n back -B -q 1 --outdir results
 The enrichment functionality of `Clipper` also allows it to control the FDR of peptide identification as an add-on to database search engines. Here we demonstrate this function using an example of Mascot, a popular database search method for peptide identification. Similar workflows also apply if users prefer other database search methods such as SEQUEST, Byonic and etc. 
 First we load a peptide-spectrum match (PSM) level sample output from Mascot with the target-decoy search strategy:
 ```{r, eval = F}
-library(rio)
 library(openxlsx)
 temp = tempfile(fileext = ".xlsx")
-dataURL <- 'http://www.stat.ucla.edu/~jingyi.li/data/Clipper/Archaea%20Mascot%20Targets%20100_FDR.xlsx'
+dataURL <- paste0(dataurl, 'Archaea%20Mascot%20Targets%20100_FDR.xlsx')
 download.file(dataURL, destfile=temp, mode='wb')
 dat = read.xlsx(temp)
-dataURL <- 'http://www.stat.ucla.edu/~jingyi.li/data/Clipper/Archaea%20Mascot%20DECOYS%20100_FDR.xlsx'
+dataURL <- paste0(dataurl, 'Archaea%20Mascot%20DECOYS%20100_FDR.xlsx')
 download.file(dataURL, destfile=temp, mode='wb')                 
 dat_decoy = read.xlsx(temp)
 # str(dat)
@@ -293,7 +295,8 @@ dat = cbind.data.frame(query = query, match = match, score = score, stringsAsFac
  
 ### generate features, psms, and scores from the decoy search
 query_decoy = paste(dat_decoy[, "Spectrum.File"], dat_decoy[, "ScanNum"],sep = ':')
-match_decoy = paste(dat_decoy[, "Spectrum.File"], dat_decoy[, "ScanNum"], dat_decoy[,"Sequence"],sep = ':')
+match_decoy = paste(dat_decoy[, "Spectrum.File"], dat_decoy[, "ScanNum"], 
+                    dat_decoy[,"Sequence"],sep = ':')
 score_decoy = -log(dat_decoy[, "Percolator.q-Value"] + 0.01)
   
 ### get rid of the false decoy matches
