@@ -5,7 +5,9 @@ date: "`r Sys.Date()`"
 output:
   html_document:
     df_print: paged
-    toc: true
+    toc: yes
+  pdf_document:
+    toc: yes
 mainfont: Arial
 header-includes: \usepackage[T1]{fontenc}
 vignette: |
