@@ -3,10 +3,10 @@ title: "Analyzing high-throughput data with Clipper"
 author: "Xinzhou Ge, Yiling Chen"
 date: "`r Sys.Date()`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     df_print: paged
+    toc: yes
+  pdf_document:
     toc: yes
 mainfont: Arial
 header-includes: \usepackage[T1]{fontenc}
@@ -14,12 +14,12 @@ vignette: |
   %\VignetteIndexEntry{Clipper: p-value-free FDR control on high-throughput data from two conditions} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
 ## Introduction 
- The most common goal of analyzing high-throughput data is to contrast two conditions to reliably screen "interesting features", where "interesting" means "differential" or "enriched". Differential features are defined as those that have different expected measurements (without measurement errors) between two conditions, and the detection of such differential features is called differential analysis. For example, popular differential analyses include the identification of differentially expressed genes (DEGs) from genome-wide gene expression data (e.g., microarray and RNA sequencing (RNA-seq) data) and differentially chromosomal interaction regions (DIRs) from Hi-C data. In contrast, enriched features are defined as those that have higher expected measurements under the experimental/treatment condition than the background condition, i.e., the negative control. The detection of such enriched features is called enrichment analysis. For example, common enrichment analyses include calling protein-binding sites in a genome from chromatin immunoprecipitation sequencing (ChIP-seq) data and identifying peptides from mass spectrometry (MS) data.
+ The most common goal of analyzing high-throughput data is to contrast two conditions to reliably screen "interesting features", where "interesting" means "enriched" or "differential". Enriched features are defined as those that have higher expected measurements under the experimental/treatment condition than the background condition, i.e., the negative control. The detection of such enriched features is called enrichment analysis. For example, common enrichment analyses include calling protein-binding sites in a genome from chromatin immunoprecipitation sequencing (ChIP-seq) data and identifying peptides from mass spectrometry (MS) data. In contrast, differential features are defined as those that have different expected measurements (without measurement errors) between two conditions, and the detection of such differential features is called differential analysis. For example, popular differential analyses include the identification of differentially expressed genes (DEGs) from genome-wide gene expression data (e.g., microarray and RNA sequencing (RNA-seq) data) and differentially chromosomal interaction regions (DIRs) from Hi-C data. 
 
 This package provides an easy implementation of a general statistical framework Clipper, an p-value-free FDR control method for analyzing high-throughput biological data. It is applicable to both enrichment analysis and differential analysis. This vignette explains the general use of `Clipper` and then demonstrates its use in typical high-throughput analyses including DEG analysis of RNA-seq data, peak calling from ChIP-Seq data, peptide identification from mass spectrometry data, and DIR analysis from Hi-C data. The details and examples of all these analyses will be further introduced below.
 
 **Note**: if you use `Clipper` in published research, please cite:
-For questions regarding the use of `Clipper`, please post to xxx .
+For questions regarding the use of `Clipper`, please post to https://github.com/JSB-UCLA/Clipper/issues.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -28,73 +28,69 @@ knitr::opts_chunk$set(
 )
 ```
 ## General pipeline
-Here we show the most basic applications of Clipper in differential and enrichment analysis. `Clipper requires a minimum of four inputs: 
+Here we show the most basic applications of Clipper in enrichment and differential analysis. `Clipper requires a minimum of four inputs: 
 
 - `score.exp` the measurements from the experimental (treatment) condition
 - `score.back` the measurements from the background (control) condition
-- `analysis` the type of analysis, "differential" or "enrichment"
+- `analysis` the type of analysis, "enrichment" or "differential".
 - `FDR` the target FDR threshold(s), set to 0.05 by default
-In a differential analysis, the two conditions can be treated equally thus you can assign either condition as background/experimental.
+
+We use `Clipper` to find interesting features by contrasting two measurement matrices, one from the experimental condition and one from the background condition. The inputs of `score.exp` and `score.back` should be numeric matrices. The rows of `score.back` and `score.exp` should match and represent the same feature, and their columns represent replicates (biological samples). For enrichment and differential analysis, set `analysis` to be `"enrichmentl"("e")` or `"differential"("d")` respectively. 
+
+We demonstrate the genral pepline of `Clipper` using the following simulated datasets: `exp_e` and `back_e` in example of enrichment analysis; and `exp_d` and `back_d` in example of differential analysis.
 
 ```{r setup}
 library(Clipper)
 ```
+### Enrichment analysis
+For enrichment analysis, we use the simulated data `exp_e` and `back_e` as inputs of `score.back` and `score.exp`. In this dataset, there are 10,000 features and the first 1000 features are interesting. For the target FDR threshold(s), we can then use `Clipper` to perform enrichment analysis:
 
-We use `Clipper` to find interesting features by contrasting two measurement matrices, one from the experimental condition and one from the background condition. The inputs of `score.exp` and `score.back` should be numeric matrices. The rows of `score.back` and `score.exp` should match and represent the same feature, and their columns represent replicates. For differential and enrichment analysis, set `analysis` to be `"differential"("d")` or  `"enrichmentl"("e")` respectively. 
-
-
-We first introduce an example of differential analysis, we can use the simulated data `exp_d` and `back_d` as inputs of `score.back` and `score.exp`. In this dataset, there are 10,000 features and the first 2000 features are interesting. For the target FDR threshold(s), we can then use `Clipper` to perform differential analysis:
-```{r}
-#use three FDR thresholds: 0.01, 0.05, 0.1
-exp_d[c(1:3, 1001:1003), ]
-back_d[c(1:3, 1001:1003), ]
-re1 <- Clipper(score.exp = exp_d, score.back = back_d, analysis = "differential", 
-               FDR = c(0.01, 0.05, 0.1))
-names(re1)
-```
-
-For enrichment analysis, we can also use the simulated data `exp_e` and `back_e` as inputs of `score.back` and `score.exp`. In this dataset, there are 10,000 features and the first 1000 features are interesting. For the target FDR threshold(s), we can then use `Clipper` to perform enrichment analysis:
 ```{r}
 #use three FDR thresholds: 0.01, 0.05, 0.1
 exp_e[c(1:3, 1001:1003), ]
 back_e[c(1:3, 1001:1003), ]
-re2 <- Clipper(score.exp = exp_e, score.back = back_e, analysis = "enrichment",
+re1 <- Clipper(score.exp = exp_e, score.back = back_e, analysis = "enrichment",
                FDR = c(0.01, 0.05, 0.1))
-names(re2)
+names(re1)
 ```
 `Clipper` returns a list and its component `discovery` is a list of indices of identified interesting discoveries corresponding to the FDR threshold(s):
 ```{r}
 #indices of identified interesting genes with the second input FDR threshold (0.05)
 re1$discoveries[[2]][1:5]
-re2$discoveries[[1]][1:5]
 ```
+We can then calculate the resulting false discovery proportion (FDP) and power:
+```{r}
+#FDP (the first 1000 genes are true positives)
+trueid <- 1:1000
+sum(!re1$discoveries[[1]] %in% trueid)/length(re1$discoveries[[1]])
+#power
+sum(re1$discoveries[[1]] %in% trueid)/length(trueid)
+```
+
+### Differential analysis
+In a differential analysis, the two conditions can be treated equally thus you can assign either condition as background/experimental. We use the simulated data `exp_d` and `back_d` as inputs of `score.back` and `score.exp`. In this dataset, there are 10,000 features and the first 2000 features are interesting. For the target FDR threshold(s), we can then use `Clipper` to perform differential analysis:
+```{r}
+#use three FDR thresholds: 0.01, 0.05, 0.1
+exp_d[c(1:3, 1001:1003), ]
+back_d[c(1:3, 1001:1003), ]
+re2 <- Clipper(score.exp = exp_d, score.back = back_d, analysis = "differential", 
+               FDR = c(0.01, 0.05, 0.1))
+names(re2)
+```
+
+`Clipper` still returns a list and its component `discovery` is a list of indices of identified interesting discoveries corresponding to the FDR threshold(s):
+```{r}
+#indices of identified interesting genes with the second input FDR threshold (0.05)
+re2$discoveries[[2]][1:5]
+```
+
 We can then calculate the resulting false discovery proportion (FDP) and power:
 ```{r}
 #FDP (the first 2000 genes are true positives)
 trueid <- 1:2000
-sum(!re1$discoveries[[1]] %in% trueid)/length(re1$discoveries[[1]])
-#power
-sum(re1$discoveries[[1]] %in% trueid)/length(trueid)
-
-trueid <- 1:1000
-#FDP (the first 1000 genes are true positives)
-sum(!re2$discoveries[[1]] %in% trueid)/length(re1$discoveries[[1]])
+sum(!re2$discoveries[[1]] %in% trueid)/length(re2$discoveries[[1]])
 #power
 sum(re2$discoveries[[1]] %in% trueid)/length(trueid)
-```
-
-
-`Clipper` returns a list and its component `discovery` is a list of indices of identified interesting discoveries corresponding to the FDR threshold(s):
-```{r}
-#indices of identified interesting genes with the second input FDR threshold (0.05)
-re1$discoveries[[2]][1:5]
-```
-We can then calculate the resulting false discovery proportion (FDP) and power:
-```{r}
-#FDP (the first 2000 genes are true positives)
-sum(re1$discoveries[[1]]>2000)/length(re1$discoveries[[1]])
-#power
-sum(re1$discoveries[[1]]<=2000)/2000
 ```
 
 ## DEG identification
@@ -195,7 +191,7 @@ head(exp1[re$discoveries[[2]] ,1:2]) ## identified DIRs
 Here we demonstrate how to apply `Clipper` as an add-on to MACS, a popular peak calling method, for a better FDR control. Similar workflows also apply if users prefer other peak calling method such as HOMER.
 
 ###Extract input data from existing peak calling software MACS
-To implement `Clipper` for peak calling, users need to extract two outputs from MACS: a "$*$_peaks.narrowPeak" file and two "$*$_pileup.dbg" files, one for the experimental track and the other for the control track. The "$*$_peaks.narrowPeak" file contains candidate peaks identified by MACS with its second and third rows indicating the start and end points of the peaks. The "$*$_pileup.dbg" files contain the base-pair read coverages for genomic regions of interest. See the following code chunk for a glance of these files. See the end of this section for command line codes we used to generate the "$*$_peaks.narrowPeak" file and the two "$*$_pileup.dbg" files.
+To implement `Clipper` for peak calling, users need to extract two outputs from MACS: a "$*$_peaks.narrowPeak" file and two "$*$_pileup.dbg" files, one for the experimental track and the other for the control track. The "$*$_peaks.narrowPeak" file contains candidate peaks identified by MACS with its second and third rows indicating the start and end points of the peaks. The "$*$_pileup.dbg" files contain the base-pair read coverages for genomic regions of interest. See the following code chunk for a glance of these files. See the end of this section for command line codes we used to generate the "$*$_peaks.narrowPeak" file and the two "$*$_pileup.dbg" files. In the following example, we use a synthetic ChIP-seq sequence as the experiemntal sample and a real control sample as background sample. The "$*$_pileup.dbg" files for these two samples are: `'experimental_treat_pileup.bdg'` and `'control_treat_pileup.bdg'`. The peaks called by MACS by contrasting these two samples are in `'twosample_peaks.narrowPeak'`.
 
 ```{r, eval = F}
 experimental <- read.table(url(paste0(dataurl, 'experimental_treat_pileup.bdg')))
