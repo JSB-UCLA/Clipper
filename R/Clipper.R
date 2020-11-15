@@ -98,23 +98,52 @@ Clipper <- function(score.exp, score.back, analysis, FDR = 0.05,
                         nknockoff = n.permutation,
                         contrastScore_method = contrast.score, importanceScore_method = 'diff',
                         FDR_control_method = procedure, ifpowerful = F, seed = seed)
+    FDR_nodisc = sapply(re$results, function(re_i){
+      length(re_i$discovery) == 0
+    })
+    if( any(FDR_nodisc & contrast.score == 'max') ){
+      warning(paste0('At FDR = ', paste0(FDR[FDR_nodisc], collapse = ', '), ', no discovery has been found using max contrast score. To make more discoveries, switch to diff contrast score or increase the FDR threshold. '))
+    }
   }
   if (analysis == 'enrichment') {
-    if (is.null(contrast.score)) {
-      contrast.score <- 'diff'
-    }else{
-      contrast.score <- match.arg(contrast.score, choices = c('diff', 'max'), several.ok = F)
-    }
     if (is.null(procedure)) {
       procedure <- 'BC'
     }else{
       procedure = match.arg(procedure, choices = c('BC','aBH','GZ'), several.ok = F)
     }
-    re <- clipper1sided(score_exp = score.exp, score_back = score.back, FDR = FDR,
-                        nknockoff = n.permutation,
-                        importanceScore_method = contrast.score,
-                        FDR_control_method = procedure, ifpowerful = F, seed = seed)
+    if (ncol(score.exp)!=ncol(score.back)){
+      procedure <- 'GZ'
+    }
+    if (is.null(contrast.score)) {
+      if (procedure=='BC'){
+        contrast.score <- 'diff'
+      }
+      if (procedure=='GZ'){
+        contrast.score <- 'max'
+      }
+    }else{
+      contrast.score <- match.arg(contrast.score, choices = c('diff', 'max'), several.ok = F)
+    }
+    if (procedure=='BC'){
+      re <- clipper1sided(score_exp = score.exp, score_back = score.back, FDR = FDR,
+                          nknockoff = n.permutation,
+                          importanceScore_method = contrast.score,
+                          FDR_control_method = procedure, ifpowerful = F, seed = seed)
+    }
+    if (procedure=='GZ'){
+      re <- clipper1sided(score_exp = score.exp, score_back = score.back, FDR = FDR,
+                          nknockoff = n.permutation,
+                          contrastScore_method = contrast.score,
+                          FDR_control_method = procedure, ifpowerful = F, seed = seed)
+    }
+    FDR_nodisc = sapply(re$results, function(re_i){
+      length(re_i$discovery) == 0
+    })
+    if( any(FDR_nodisc & procedure != 'aBH') ){
+      warning(paste0('At FDR = ', paste0(FDR[FDR_nodisc], collapse = ', '), ', no discovery has been found using current procedure. To make more discoveries, switch to aBH procedure or increase the FDR threshold.'))
+    }
   }
+
   contrast.score.value <- re$contrastScore
   thre <- unlist(lapply(re$results,'[[','thre'))
   discoveries <- lapply(re$results,'[[','discovery')

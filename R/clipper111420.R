@@ -122,7 +122,12 @@ clipper1sided = function(score_exp,
       nknockoff = min(nknockoff, nknockoff_max)
     }else{
       warnings(paste0('nknockoff is not supplied; generate the maximum number of knockoffs: ', nknockoff_max))
-      nknockoff = nknockoff_max
+      if (contrastScore_method == "diff"){
+        nknockoff = nknockoff_max
+      }else{
+        nknockoff = 1
+      }
+
     }
 
     re = suppressWarnings( clipper_1sided_wknockoff(score_exp = score_exp,
@@ -207,9 +212,11 @@ clipper2sided = function(score_exp,
     }
     nknockoff = min(nknockoff, nknockoff_max)
   }else{
-    nknockoff = min(nknockoff_max, 50)
-    warnings(paste0('nknockoff is not supplied; generate the maximum number of knockoffs: ', nknockoff))
-
+    if (contrastScore_method == "diff"){
+      nknockoff = min(nknockoff_max, 50)
+    }else{
+      nknockoff = 1
+    }
   }
 
   ######################
@@ -230,7 +237,7 @@ clipper2sided = function(score_exp,
              importanceScore_method = importanceScore_method,
              importanceScore = kappatau_ls$importanceScore,
              contrastScore_method = contrastScore_method,
-             contrastScore = list(tau = kappatau_ls$tau, kappa = kappatau_ls$kappa),
+             contrastScore = (2*kappatau_ls$kappa  - 1) * abs(kappatau_ls$tau),
              results = re)
 
   ###################### if FDR_control_method = BC or GZ but failt to identify any discovery at some FDR levels, switch to BH at those FDR levels.
@@ -238,7 +245,7 @@ clipper2sided = function(score_exp,
     FDR_nodisc = sapply(re$results, function(re_i){
       length(re_i$discovery) == 0
     })
-    if( any(FDR_nodisc) ){
+    if( any(FDR_nodisc & contrastScore_method == 'max') ){
       warning(paste0('At FDR = ', paste0(FDR[FDR_nodisc], collapse = ', '), ', no discovery has been found using FDR control method ', FDR_control_method,' ; switching to BH...'))
       re_clipperbh = clipper_BH(contrastScore =  re$contrastScore, nknockoff = nknockoff, FDR = FDR[FDR_nodisc])
       re$results[FDR_nodisc] = re_clipperbh
@@ -310,7 +317,7 @@ clipper_1sided_wknockoff = function(score_exp,
               importanceScore_method = importanceScore_method,
               importanceScore = kappatau_ls$importanceScore,
               contrastScore_method = contrastScore_method,
-             contrastScore = list(tau = kappatau_ls$tau, kappa = kappatau_ls$kappa),
+             contrastScore = (2*kappatau_ls$kappa  - 1) * abs(kappatau_ls$tau),
              results = re)
   return(re)
 }
@@ -496,27 +503,29 @@ compute_taukappa = function(score_exp, score_back, r1, r2, if2sided,
 # kappa = kappatau_ls$kappa
 clipper_GZ = function(tau, kappa, nknockoff, FDR){
   n = length(tau)
-  idx_na = is.na(tau) | is.na(kappa)
-  tau = tau[!idx_na]
-  kappa = kappa[!idx_na]
-  tau_uniq  = sort(unique(tau))
+  contrastScore = (2*kappa  - 1) * abs(tau)
+  contrastScore[is.na(contrastScore)] = 0 # impute missing contrast scores with 0
+  c_abs = abs(contrastScore[contrastScore != 0])
+  c_abs  = sort(unique(c_abs))
+
   i = 1
-  emp_fdp = rep(NA, length(tau_uniq))
+  emp_fdp = rep(NA, length(c_abs))
   emp_fdp[1] = 2
-  while(i <= length(tau_uniq) & emp_fdp[max(i-1, 1)] > min(FDR)){
+  while(i <= length(c_abs) & emp_fdp[max(i-1, 1)] > min(FDR)){
     # print(i)
-    t = tau_uniq[i]
-    emp_fdp[i] = 1/nknockoff * (1 + sum((!kappa) & tau >= t))/max(sum( kappa & tau >= t ),1)
+    t = c_abs[i]
+    emp_fdp[i] = (1/nknockoff + 1/nknockoff * sum(contrastScore <= -t))/ sum(contrastScore >= t)
     i = i + 1
   }
-  tau_uniq = tau_uniq[!is.na(emp_fdp)]
+  c_abs = c_abs[!is.na(emp_fdp)]
   emp_fdp = emp_fdp[!is.na(emp_fdp)]
+
   re = lapply(FDR, function(FDR_i){
-    thre = tau_uniq[min(which(emp_fdp <= FDR_i))]
+    thre = c_abs[min(which(emp_fdp <= FDR_i))]
     re_i = list(FDR = FDR_i,
-                FDR_control = 'GZ',
+                FDR_control = 'BC',
                 thre = thre,
-                discovery = (1:n)[!idx_na][which(kappa & tau >= thre)])
+                discovery = which(contrastScore >= thre))
     return(re_i)
   })
   return(re)
