@@ -105,6 +105,12 @@ Clipper <- function(score.exp, score.back, analysis, FDR = 0.05,
       warning(paste0('At FDR = ', paste0(FDR[FDR_nodisc], collapse = ', '), ', no discovery has been found using max contrast score. To make more discoveries, switch to diff contrast score or increase the FDR threshold. '))
     }
   }
+  if(is.null(dim(score.exp))){
+    score_exp = matrix(score.exp, ncol = 1)
+  }
+  if(is.null(dim(score.back))){
+    score_back = matrix(score.back, ncol = 1)
+  }
   if (analysis == 'enrichment') {
     if (is.null(procedure)) {
       procedure <- 'BC'

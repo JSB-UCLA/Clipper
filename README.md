@@ -16,7 +16,7 @@ Installation
 The package is not on CRAN yet. For installation please use the following codes in `R`
 
 ``` r
-install.packages("devtools")
+if(!require(devtools)) install.packages("devtools")
 library(devtools)
 
 install_github("JSB-UCLA/Clipper")
