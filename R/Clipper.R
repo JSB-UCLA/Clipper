@@ -106,10 +106,10 @@ Clipper <- function(score.exp, score.back, analysis, FDR = 0.05,
     }
   }
   if(is.null(dim(score.exp))){
-    score_exp = matrix(score.exp, ncol = 1)
+    score.exp = matrix(score.exp, ncol = 1)
   }
   if(is.null(dim(score.back))){
-    score_back = matrix(score.back, ncol = 1)
+    score.back = matrix(score.back, ncol = 1)
   }
   if (analysis == 'enrichment') {
     if (is.null(procedure)) {
