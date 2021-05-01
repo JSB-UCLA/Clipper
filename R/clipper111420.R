@@ -205,7 +205,7 @@ clipper2sided = function(score_exp,
   }
 
   #### check if nknockoff is reasonable
-  nknockoff_max =  min(ifelse(r1 == r2, choose(r1+r2, r1)/2 - 1, choose(r1+r2, r1)-1), 50)
+  nknockoff_max =  min(ifelse(r1 == r2, choose(r1+r2, r1)/2 - 1, choose(r1+r2, r1)-1), 200)
   if(!is.null(nknockoff)){
     if(nknockoff > nknockoff_max | !is.integer(nknockoff) | nknockoff < 1){
       warnings('nknockoff must be a positive integer and must not exceed the maximum number of knockoff; using the maximal number of knockoffs instead.')
@@ -422,13 +422,13 @@ clipper_BH = function(contrastScore, nknockoff = NULL, FDR){
 
 generate_knockoffidx = function( r1, r2, nknockoff,nknockoff_max, seed){
   set.seed(seed)
-  if(nknockoff_max == 50){
+  if(nknockoff_max == 200){
     ### randomly permute nknockoff times
     knockoffidx = vector('list', length= nknockoff)
     i_knockoff = 1
     while(i_knockoff <= nknockoff){
       temp = sample(r1 + r2, r1, replace = F)
-      if(any(!temp %in% 1:r1)){
+      if(any(!temp %in% 1:r1) & any(temp %in% 1:r1)){
         knockoffidx[[i_knockoff]] = temp
         i_knockoff = i_knockoff + 1
       }else{

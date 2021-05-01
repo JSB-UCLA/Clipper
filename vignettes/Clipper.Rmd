@@ -110,8 +110,6 @@ cond_idx[1:r1] = 1
 dat = cbind(count1, count2)
 cond_idx = factor(cond_idx)
 y <- DGEList(counts=dat,group=cond_idx)
-keep <- filterByExpr(y)  ## optional gene filtering
-y <- y[keep,,keep.lib.sizes=FALSE]
 y <- calcNormFactors(y)
 count_norm = cpm(y)
 ```
