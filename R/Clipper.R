@@ -163,3 +163,4 @@ Clipper <- function(score.exp, score.back, analysis, FDR = 0.05,
              q = q)
   return(re)
 }
+

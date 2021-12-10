@@ -46,6 +46,7 @@ Effective only when \code{procedure = "GZ"}. See below for details.}
 \item{\code{contrast.score.value:}}{the values of contrast scores;}
 \item{\code{FDR:}}{a vector of the target FDR threshold(s);}
 \item{\code{contrast.score.thre:}}{a vector of the threshold(s) on contrast scores corresponding to the FDR threshold(s);}
+\item{\code{q:}}{the q-values of each feature;}
 \item{\code{discovery:}}{a list of identified discoveries. Each component contains discovered
 features, coded as the row indices of \code{score.exp} and \code{score.back}, at a FDR threshold.}
 }
