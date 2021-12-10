@@ -357,21 +357,26 @@ clipper_BC = function(contrastScore, FDR){
 
   i = 1
   emp_fdp = rep(NA, length(c_abs))
-  emp_fdp[1] = 2
-  while(i <= length(c_abs) & emp_fdp[max(i-1, 1)] > min(FDR)){
+  emp_fdp[1] = 1
+  while(i <= length(c_abs)){
     # print(i)
     t = c_abs[i]
-    emp_fdp[i] = (1 + sum(contrastScore <= -t))/ sum(contrastScore >= t)
+    emp_fdp[i] = min((1 + sum(contrastScore <= -t))/ sum(contrastScore >= t),1)
+    if (i >=2){emp_fdp[i] = min(emp_fdp[i], emp_fdp[i-1])}
     i = i + 1
   }
+
   c_abs = c_abs[!is.na(emp_fdp)]
   emp_fdp = emp_fdp[!is.na(emp_fdp)]
+  q <- emp_fdp[match(contrastScore, c_abs)]
+  q[which(is.na(q))] = 1
 
   re = lapply(FDR, function(FDR_i){
     thre = c_abs[min(which(emp_fdp <= FDR_i))]
     re_i = list(FDR = FDR_i,
                 FDR_control = 'BC',
                 thre = thre,
+                q = q,
                 discovery = which(contrastScore >= thre))
     return(re_i)
   })
@@ -411,9 +416,8 @@ clipper_BH = function(contrastScore, nknockoff = NULL, FDR){
   re = lapply(FDR, function(FDR_i){
     re_i = list(FDR = FDR_i,
                 FDR_control = 'BH',
-                discovery = (1:n)[!idx_na][which(qvalue <= FDR_i)]
-
-                )
+                discovery = (1:n)[!idx_na][which(qvalue <= FDR_i)],
+                q = qvalue)
     return(re_i)
   })
 
@@ -510,22 +514,28 @@ clipper_GZ = function(tau, kappa, nknockoff, FDR){
 
   i = 1
   emp_fdp = rep(NA, length(c_abs))
-  emp_fdp[1] = 2
-  while(i <= length(c_abs) & emp_fdp[max(i-1, 1)] > min(FDR)){
+  emp_fdp[1] = 1
+  while(i <= length(c_abs)){
     # print(i)
     t = c_abs[i]
-    emp_fdp[i] = (1/nknockoff + 1/nknockoff * sum(contrastScore <= -t))/ sum(contrastScore >= t)
+    emp_fdp[i] = min((1/nknockoff + 1/nknockoff * sum(contrastScore <= -t))/ sum(contrastScore >= t),1)
+    if (i >=2){emp_fdp[i] = min(emp_fdp[i], emp_fdp[i-1])}
     i = i + 1
   }
+
   c_abs = c_abs[!is.na(emp_fdp)]
   emp_fdp = emp_fdp[!is.na(emp_fdp)]
+  q <- emp_fdp[match(contrastScore, c_abs)]
+  q[which(is.na(q))] = 1
+
 
   re = lapply(FDR, function(FDR_i){
     thre = c_abs[min(which(emp_fdp <= FDR_i))]
     re_i = list(FDR = FDR_i,
                 FDR_control = 'BC',
                 thre = thre,
-                discovery = which(contrastScore >= thre))
+                discovery = which(contrastScore >= thre),
+                q = q)
     return(re_i)
   })
   return(re)
