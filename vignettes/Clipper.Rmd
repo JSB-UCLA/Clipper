@@ -3,10 +3,10 @@ title: "Analyzing high-throughput data with Clipper"
 author: "Xinzhou Ge, Yiling Chen"
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     df_print: paged
-    toc: yes
-  pdf_document:
     toc: yes
 mainfont: Arial
 header-includes: \usepackage[T1]{fontenc}
