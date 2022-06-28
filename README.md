@@ -21,4 +21,6 @@ library(devtools)
 
 install_github("JSB-UCLA/Clipper")
 ```
+A detailed tutorial can be found in our vignette, and on our website: <http://shiny2.stat.ucla.edu/Clipper/>
 
+Online app website: <https://app.superbio.ai/apps/108/>

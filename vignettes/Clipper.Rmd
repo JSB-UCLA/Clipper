@@ -3,10 +3,10 @@ title: "Analyzing high-throughput data with Clipper"
 author: "Xinzhou Ge, Yiling Chen"
 date: "`r Sys.Date()`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     df_print: paged
+    toc: yes
+  pdf_document:
     toc: yes
 mainfont: Arial
 header-includes: \usepackage[T1]{fontenc}
@@ -118,10 +118,10 @@ Next we apply `Clipper` to preprocessed gene expression matrices. Log-transforma
 ##### apply clipper to log2-transformed matrices with target FDR = 0.05
 re_clipper = Clipper(score.exp = log(base = 2, count_norm[,1:r1] + 1), 
                      score.back = log(base = 2, count_norm[,-(1:r1)] + 1), 
-                     FDR = 0.5,
+                     FDR = 0.05,
                      analysis = "differential")
 head(re_clipper$discoveries[[1]]) ###### identified DEG indices at FDR = 0.05
-# 34  72  90 118 125 132 
+# 676 2173 3103 3105 3484 3490
 ```
 
 
